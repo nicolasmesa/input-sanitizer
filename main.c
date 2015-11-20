@@ -116,10 +116,9 @@ struct line_struct *getLineComponents(char *line) {
 				done = 1;
 				break;
 
+			case '\t':
 			case ' ':
-				// TODO: can also be a tab character
-				// check that the space is not escaped
-				if (!inQuotes) {
+				if (!inQuotes && prevChar != '\\') {
 					done = 1;
 				}
 				break;
@@ -127,6 +126,7 @@ struct line_struct *getLineComponents(char *line) {
 			case '\'':
 				if (inQuotes && quoteChar == c && prevChar != '\\') {
 					inQuotes = 0;
+					line++;
 					done = 1;
 				}
 				break;
@@ -134,6 +134,7 @@ struct line_struct *getLineComponents(char *line) {
 			case '"':
                                 if (inQuotes && quoteChar == c && prevChar != '\\') {
                                         inQuotes = 0;
+					line++;
                                         done = 1;
                                 }
                                 break;
@@ -149,16 +150,33 @@ struct line_struct *getLineComponents(char *line) {
 		prevChar = *line;
 		line++;
 	}
-	
 
-	if (*line != ' ') {
+
+	// Should not happen
+	if (inQuotes) {
+		printAndExit("Unexpected end of file name. Still in quotes\n");
+	}	
+
+	if (*line != ' ' && *line != '\t') {
 		printf("Invalid (%s)\n", line);
 		return NULL;
 	}
 
 	*line = '\0';
+	line++;
+
+	while (1) {
+		if  (*line != ' ' && *line != '\t') {
+			break;
+		}
+		line++;
+	}
+
+
+	dataStart = line;
 
 	printf("Filename: (%s)\n", fileNameStart);
+	printf("Data: (%s)\n", dataStart); 
 
 	return NULL;
 }
