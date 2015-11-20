@@ -1,0 +1,6 @@
+.DS_STORE
+a.out
+*.swp
+*.o
+test.c
+input_sanitizer
