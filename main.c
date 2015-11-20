@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <ctype.h>
 
 
 #define INITIAL_LINE_SIZE 100
@@ -88,7 +89,7 @@ char *getLine() {
 }
 
 
-struct line_struct *getLineComponents(char *line) {
+int getLineComponents(char *line, struct line_struct *lineStruct) {
 	int lineLen = strlen(line);
 	char *fileNameStart = line;
 	char *dataStart = NULL;
@@ -96,7 +97,6 @@ struct line_struct *getLineComponents(char *line) {
 	char prevChar = 0;
 	int inQuotes = 0;
 	int done = 0;
-
 
 	if (*line == '"' || *line == '\'') {
 		quoteChar = *line;
@@ -159,7 +159,7 @@ struct line_struct *getLineComponents(char *line) {
 
 	if (*line != ' ' && *line != '\t') {
 		printf("Invalid (%s)\n", line);
-		return NULL;
+		return 1;
 	}
 
 	*line = '\0';
@@ -173,16 +173,186 @@ struct line_struct *getLineComponents(char *line) {
 	}
 
 
+	// TODO
+	if (*line == '\0') {
+		printAndExit("Data field can't be the empty string");
+	}
+
 	dataStart = line;
 
-	printf("Filename: (%s)\n", fileNameStart);
-	printf("Data: (%s)\n", dataStart); 
+	lineStruct->fileName = fileNameStart;
+	lineStruct->data = dataStart;
 
-	return NULL;
+	return 0;
+}
+
+int parseEscapeSquence(char **startOfSequence, char **currEscapedFileName) {
+	char *currSeq = *startOfSequence;
+	char *currEscaped = *currEscapedFileName;
+	int done = 0;
+	char digit[2];
+	digit[1] = '\0';
+
+	if (*currSeq != '\\') {
+		printf("Not escape sequence\n");
+		return 1;
+	}
+
+	
+	currSeq++;
+
+	switch (*currSeq) {
+		case 'n':
+			*currEscaped = '\n';
+			done = 1;
+			break;
+
+		case 't':
+			*currEscaped = '\t';
+			done = 1;
+			break;
+
+		case 'r':
+			*currEscaped = '\r';
+			done = 1;
+			break;
+
+		case ' ':
+			*currEscaped = ' ';
+			done = 1;
+			break;
+
+		case '\\':
+			*currEscaped = '\\';
+			done = 1;
+			break;
+
+		default:
+			done = 0;
+			break;
+	}
+
+        if (done) {
+                *startOfSequence = currSeq;
+                return 0;
+        }
+
+
+	//Octal
+	if (isdigit(*currSeq)) {
+		int numDigits = 1;
+		int num = 0;
+
+		while (isdigit(*currSeq)) {
+			printf("Analyzinng (%c)\n", *currSeq);
+
+
+			digit[0] = *currSeq;
+			int digitVal = atoi(digit);
+
+			if (digitVal > 7) {
+				break;
+			}
+
+			num = num * 8 + digitVal;
+
+			if (numDigits >= 3) {
+				break;
+			}
+
+			numDigits++;
+
+			currSeq++;
+		}
+
+		printf("num: %d\n", num);
+
+		*currEscaped = (char) num;
+	}
+
+	*startOfSequence = currSeq;
+
+	return 0;
+}
+
+int parseFileName(char *fileName, char **escapedFileName) {
+	int fileNameLen = strlen(fileName);
+	char *curr = fileName;
+	char *currEscaped;
+	char c, prev = 0;
+
+	*escapedFileName = safeMalloc(fileNameLen + 1);
+	currEscaped = *escapedFileName;
+
+
+	// TODO realloc escapedFileName if necessary
+	while (1) {
+		printf("c (%c)\n", *curr);
+		c = *curr;
+
+		if (c == '\0') {
+			*currEscaped = '\0';
+			break;
+		}
+
+		if (isalnum(c)) {
+			*currEscaped = *curr;
+			prev = *curr;
+
+			printf("currEscaped (%c)\n", *(currEscaped - 1));
+
+			curr++;
+			currEscaped++;
+
+			continue;
+		}
+
+		switch (c) {
+			case '\\':
+				parseEscapeSquence(&curr, &currEscaped);
+				break;
+			default:
+				*currEscaped = *curr;
+				break;
+
+		}
+
+
+		prev = *curr;
+		curr++;
+		currEscaped++;
+	}
+
+	return 0;
 }
 
 void parseLine(char *line) {
-	struct line_struct *lineStruct = getLineComponents(line);
+	int error;
+	struct line_struct lineStruct;
+	lineStruct.fileName = NULL;
+	lineStruct.data = NULL;
+	char *escapedFileName;
+
+	printf("line: (%s)\n", line);
+
+	error = getLineComponents(line, &lineStruct);
+
+	if (error) {
+		printf("Error returned");
+		return;
+	}
+
+	printf("Unescaped filename: (%s)\n", lineStruct.fileName);
+	printf("Unescaped Data: (%s)\n", lineStruct.data);
+
+	error = parseFileName(lineStruct.fileName, &escapedFileName);
+
+	printf("Escaped filename: (%s)\n", escapedFileName);
+
+
+	printf("\n---------------------------------------------\n\n");
+
+	free(escapedFileName);
 }
 
 int main(int argc, char **argv) {
@@ -190,10 +360,21 @@ int main(int argc, char **argv) {
 	while (!endOfInput) {
 		char *line = getLine();
 
+		if (endOfInput && *line == '\0') {
+			free(line);
+			break;
+		}
+
 		parseLine(line);
 
 		free(line);
+
+		if (endOfInput) {
+			break;
+		}
 	}
+
+	printf("nicoa\100\n");
 
 	return 0;
 }
