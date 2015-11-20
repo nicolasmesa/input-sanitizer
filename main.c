@@ -227,9 +227,20 @@ int parseEscapeSquence(char **startOfSequence, char **currEscapedFileName) {
 			done = 1;
 			break;
 
-		default:
-			done = 0;
+		case '"':
+			*currEscaped = '"';
+			done = 1;
 			break;
+
+		default:
+			if (isdigit(*currSeq)) {
+				done = 0;
+				break;
+			}
+
+			*currEscaped = *currSeq;
+                        done = 1;
+                        break;
 	}
 
         if (done) {
@@ -265,7 +276,10 @@ int parseEscapeSquence(char **startOfSequence, char **currEscapedFileName) {
 			currSeq++;
 		}
 
-		printf("num: %d\n", num);
+		if (num == 0) {
+			printf("Error: can't have NUL char\n");
+			return 1;
+		}
 
 		*currEscaped = (char) num;
 	}
@@ -332,6 +346,7 @@ void parseLine(char *line) {
 	lineStruct.fileName = NULL;
 	lineStruct.data = NULL;
 	char *escapedFileName;
+	char *command;
 
 	printf("line: (%s)\n", line);
 
@@ -349,6 +364,14 @@ void parseLine(char *line) {
 
 	printf("Escaped filename: (%s)\n", escapedFileName);
 
+
+	command = safeMalloc(10 + strlen(escapedFileName));
+
+	sprintf(command, "echo \"%s\"", escapedFileName);
+
+	printf("Command: %s\n", command);
+
+	system(command);
 
 	printf("\n---------------------------------------------\n\n");
 
@@ -373,8 +396,6 @@ int main(int argc, char **argv) {
 			break;
 		}
 	}
-
-	printf("nicoa\100\n");
 
 	return 0;
 }
