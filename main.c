@@ -449,7 +449,7 @@ int validateAbsolutePath(char *path) {
 	char *dir = "/tmp/";
 
 	if (strncmp(path, dir, strlen(dir)) != 0) {
-		printf("Error: Not in /tmp or cwd\n");
+		printf("Error: Not in /tmp or cwd (%s)\n", path);
 		return 1;
 	}
 
@@ -458,7 +458,7 @@ int validateAbsolutePath(char *path) {
 
 	while (*path != '\0') {
 		if (*path == '/') {
-			printf("Error: Not in /tmp or cwd\n");
+			printf("Error: Not in /tmp or cwd (%s)\n", path);
 			return 1;
 		}
 		path++;
@@ -513,6 +513,11 @@ int getAbsolutePath(char *fileName, char **absolutePath) {
 				done = 1;
 				break;
 			case '/':
+				if (prev == '.' && currCmpLen == 1) {
+					twoConsecutiveDots = 0;
+					break;
+				}
+
 				if (twoConsecutiveDots && currCmpLen == 2) {
 					popCmp(&cmpList);
 				} else if (prev && prev != '/') {
@@ -651,6 +656,8 @@ void parseLine(char *line) {
 	if (error) {
 		return;
 	}
+
+	printf("Absolute path (%s)\n", absolutePath);
 
 	escapeShellChars(absolutePath, &escapedFileName);
 	escapeShellChars(dataStruct.field, &escapedData);
