@@ -16,6 +16,12 @@ struct line_struct {
 	char *data;
 };
 
+struct field_struct {
+	char *field;
+	int quoted;
+	char quote;
+};
+
 int endOfInput = 0;
 
 
@@ -83,7 +89,7 @@ char *getLine() {
     printAndExit(NULL);
   }
 
-  free(line);
+  //free(line);
 
   return returnLine;
 }
@@ -161,6 +167,7 @@ int getLineComponents(char *line, struct line_struct *lineStruct) {
 		printf("Invalid (%s)\n", line);
 		return 1;
 	}
+
 
 	*line = '\0';
 	line++;
@@ -289,15 +296,24 @@ int parseEscapeSquence(char **startOfSequence, char **currEscapedFileName) {
 	return 0;
 }
 
-int parseFileName(char *fileName, char **escapedFileName) {
-	int fileNameLen = strlen(fileName);
-	char *curr = fileName;
+int parseField(char *fieldText, struct field_struct *fieldStruct) {
+	int fieldLen = strlen(fieldText);
+	char *curr = fieldText;
 	char *currEscaped;
+	char *escapedField;
 	char c, prev = 0;
 
-	*escapedFileName = safeMalloc(fileNameLen + 1);
-	currEscaped = *escapedFileName;
+	escapedField = safeMalloc(fieldLen + 1);
+	currEscaped = escapedField;
 
+	fieldStruct->quoted = 0;
+	fieldStruct->quote = 0;
+
+	if (*curr == '"' || *curr == '\'') {
+		fieldStruct->quoted = 1;
+		fieldStruct->quote = *curr;
+		curr++;
+	}	
 
 	// TODO realloc escapedFileName if necessary
 	while (1) {
@@ -333,6 +349,14 @@ int parseFileName(char *fileName, char **escapedFileName) {
 		currEscaped++;
 	}
 
+
+	if (fieldStruct->quoted) {
+		currEscaped--;
+		*currEscaped = '\0';
+	}
+
+	fieldStruct->field = escapedField;
+
 	return 0;
 }
 
@@ -341,13 +365,17 @@ void parseLine(char *line) {
 	struct line_struct lineStruct;
 	lineStruct.fileName = NULL;
 	lineStruct.data = NULL;
+	struct field_struct fileNameStruct;
+	struct field_struct dataStruct;
 	char *escapedFileName;
+	char *escapedData;
 	char *command;
 	char quote = 0;
 
 	printf("line: (%s)\n", line);
 
 	error = getLineComponents(line, &lineStruct);
+
 
 	if (error) {
 		printf("Error returned");
@@ -357,36 +385,34 @@ void parseLine(char *line) {
 	printf("Unescaped filename: (%s)\n", lineStruct.fileName);
 	printf("Unescaped Data: (%s)\n", lineStruct.data);
 
-	error = parseFileName(lineStruct.fileName, &escapedFileName);
+	error = parseField(lineStruct.fileName, &fileNameStruct);
+
+	escapedFileName = fileNameStruct.field;
+
+	error = parseField(lineStruct.data, &dataStruct);
+
+	escapedData = dataStruct.field;
+
 
 	int escapedFileNameLen = strlen(escapedFileName);
+	int escapedDataLen = strlen(escapedData);
 
-	char *fileNameNoQuotes = escapedFileName;
-	printf("Escaped filename with quotes: (%s)\n", escapedFileName);
+	
+	command = safeMalloc(50 + escapedFileNameLen + escapedDataLen);
 
-	// Get rid of quotes
-	if (*escapedFileName == '"' || *escapedFileName == '\'') {
-		quote = *escapedFileName;
+	sprintf(command, "echo \"%s\" >> \"%s.nm2805\"", escapedData, escapedFileName);
 
-		if (*(escapedFileName + escapedFileNameLen - 1) != quote) {
-			printAndExit("Different quotes on this\n");
-		}
-
-		fileNameNoQuotes = escapedFileName + 1;
-		*(escapedFileName + escapedFileNameLen - 1) = '\0';
-	}
-
-	command = safeMalloc(10 + strlen(escapedFileName));
-
-	sprintf(command, "echo \"%s\"", fileNameNoQuotes);
 
 	printf("Command: %s\n", command);
 
+	
 	system(command);
 
 	printf("\n---------------------------------------------\n\n");
 
-	free(escapedFileName);
+	free(command);
+	free(fileNameStruct.field);
+	free(dataStruct.field);
 }
 
 int main(int argc, char **argv) {
