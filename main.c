@@ -301,7 +301,6 @@ int parseFileName(char *fileName, char **escapedFileName) {
 
 	// TODO realloc escapedFileName if necessary
 	while (1) {
-		printf("c (%c)\n", *curr);
 		c = *curr;
 
 		if (c == '\0') {
@@ -312,9 +311,6 @@ int parseFileName(char *fileName, char **escapedFileName) {
 		if (isalnum(c)) {
 			*currEscaped = *curr;
 			prev = *curr;
-
-			printf("currEscaped (%c)\n", *(currEscaped - 1));
-
 			curr++;
 			currEscaped++;
 
@@ -347,6 +343,7 @@ void parseLine(char *line) {
 	lineStruct.data = NULL;
 	char *escapedFileName;
 	char *command;
+	char quote = 0;
 
 	printf("line: (%s)\n", line);
 
@@ -362,12 +359,26 @@ void parseLine(char *line) {
 
 	error = parseFileName(lineStruct.fileName, &escapedFileName);
 
-	printf("Escaped filename: (%s)\n", escapedFileName);
+	int escapedFileNameLen = strlen(escapedFileName);
 
+	char *fileNameNoQuotes = escapedFileName;
+	printf("Escaped filename with quotes: (%s)\n", escapedFileName);
+
+	// Get rid of quotes
+	if (*escapedFileName == '"' || *escapedFileName == '\'') {
+		quote = *escapedFileName;
+
+		if (*(escapedFileName + escapedFileNameLen - 1) != quote) {
+			printAndExit("Different quotes on this\n");
+		}
+
+		fileNameNoQuotes = escapedFileName + 1;
+		*(escapedFileName + escapedFileNameLen - 1) = '\0';
+	}
 
 	command = safeMalloc(10 + strlen(escapedFileName));
 
-	sprintf(command, "echo \"%s\"", escapedFileName);
+	sprintf(command, "echo \"%s\"", fileNameNoQuotes);
 
 	printf("Command: %s\n", command);
 
