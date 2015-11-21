@@ -377,8 +377,6 @@ void pushCmp(struct cmp_list *cmpList, char *cmpStart, int cmpLen) {
 
 	cmp = strndup(cmpStart, cmpLen);
 
-	printf("pushcmp: (%s)\n", cmp);
-
 	newNode->fileName = cmp;
 	newNode->next = cmpList->head;
 	newNode->prev = NULL;
@@ -399,8 +397,6 @@ void popCmp(struct cmp_list *cmpList) {
 	}
 
 	struct file_node *toDelete = cmpList->head;
-
-	printf("popcmp (%s)\n", toDelete->fileName);
 
 	cmpList->head = toDelete->next;
 
@@ -517,7 +513,6 @@ int getAbsolutePath(char *fileName, char **absolutePath) {
 				done = 1;
 				break;
 			case '/':
-				printf("Slash found: CurrCmp Len (%d)\n", currCmpLen);
 				if (twoConsecutiveDots && currCmpLen == 2) {
 					popCmp(&cmpList);
 				} else if (prev && prev != '/') {
@@ -555,6 +550,56 @@ int getAbsolutePath(char *fileName, char **absolutePath) {
 	}
 
 	*absolutePath = path;
+
+	return 0;
+}
+
+int escapeShellChars(char *line, char **escapedLine) {
+	*escapedLine = safeMalloc(strlen(line) * 2);
+	char *currEscaped = *escapedLine;
+	char c;
+
+	while ((c = *line) != '\0') {
+		switch (c) {
+			case '\'':
+			case '"':
+			case '\\':
+			case '|':
+			case ';':
+			case '>':
+			case '<':
+			case '(':
+			case ')':
+			case '*':
+			case '?':
+			case '`':
+			case '#':
+			case '!':
+			case '+':
+			case '-':
+			case '{':
+			case '}':
+			case '[':
+			case ']':
+			case '~':
+			case '&':
+			case '^':
+			case '$':
+				*currEscaped = '\\';
+				currEscaped++;
+				*currEscaped = c;
+				break;
+			default:
+				*currEscaped = c;
+				break;
+
+		}
+
+		currEscaped++;
+		line++;
+	}
+
+	printf("Escaeped string (%s)\n", *escapedLine);
 
 	return 0;
 }
@@ -599,7 +644,6 @@ void parseLine(char *line) {
 		return;
 	}
 
-	escapedData = dataStruct.field;
 
 	char *absolutePath;
 	error = getAbsolutePath(escapedFileName, &absolutePath);
@@ -608,14 +652,16 @@ void parseLine(char *line) {
 		return;
 	}
 
+	escapeShellChars(absolutePath, &escapedFileName);
+	escapeShellChars(dataStruct.field, &escapedData);
 
-	int escapedFileNameLen = strlen(absolutePath);
-	int escapedDataLen = strlen(escapedData);
+	int escapedFileNameLen = strlen(escapedFileName);
+        int escapedDataLen = strlen(escapedData);
 
 	
 	command = safeMalloc(50 + escapedFileNameLen + escapedDataLen);
 
-	sprintf(command, "echo \"%s\" >> \"%s.nm2805\"", escapedData, absolutePath);
+	sprintf(command, "echo \"%s\" >> \"%s.nm2805\"", escapedData, escapedFileName);
 
 
 	printf("Command: %s\n", command);
