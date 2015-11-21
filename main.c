@@ -22,6 +22,17 @@ struct field_struct {
 	char quote;
 };
 
+struct file_node {
+	struct file_node *next;
+	struct file_node *prev;
+	char *fileName;
+};
+
+struct cmp_list {
+	struct file_node *head;
+	struct file_node *tail;
+};
+
 int endOfInput = 0;
 
 
@@ -360,6 +371,194 @@ int parseField(char *fieldText, struct field_struct *fieldStruct) {
 	return 0;
 }
 
+void pushCmp(struct cmp_list *cmpList, char *cmpStart, int cmpLen) {
+	struct file_node *newNode = safeMalloc(sizeof(struct file_node));
+	char *cmp;
+
+	cmp = strndup(cmpStart, cmpLen);
+
+	printf("pushcmp: (%s)\n", cmp);
+
+	newNode->fileName = cmp;
+	newNode->next = cmpList->head;
+	newNode->prev = NULL;
+
+	if (cmpList->head == NULL) {
+		cmpList->tail = newNode;
+	} else {
+		cmpList->head->prev = newNode;
+	}
+
+	cmpList->head = newNode;
+}
+
+void popCmp(struct cmp_list *cmpList) {
+	if (cmpList->head == NULL) {
+		printf("Going beyond /\n");
+		return;
+	}
+
+	struct file_node *toDelete = cmpList->head;
+
+	printf("popcmp (%s)\n", toDelete->fileName);
+
+	cmpList->head = toDelete->next;
+
+	if (cmpList->head != NULL) {
+		cmpList->head->prev = NULL;
+	}
+
+	free(toDelete->fileName);
+	free(toDelete);
+}
+
+char *getAbsolutePathFromList(struct cmp_list *cmpList) {
+	int memLen = 100;
+	char *path = safeMalloc(memLen);
+	struct file_node *window;
+	int currLen = 0;
+
+	for (window = cmpList->tail; window != NULL; window = window->prev) {
+		int cmpLen = strlen(window->fileName);
+
+		if (currLen + cmpLen + 2 >= memLen) {
+			memLen = 2 * (currLen + cmpLen + 2);
+			path = realloc(path, memLen);
+
+			if (path == NULL) {
+				printAndExit(NULL);
+			}
+		}
+
+		
+
+		char *ret = strcat(path, "/");
+
+		if (ret == NULL) {
+			printAndExit(NULL);
+		}
+
+		ret = strcat(path, window->fileName);
+
+		if (ret == NULL) {
+			printAndExit(NULL);
+		}
+	}
+
+
+	return path;
+}
+
+int validateAbsolutePath(char *path) {
+	char *dir = "/tmp/";
+
+	if (strncmp(path, dir, strlen(dir)) != 0) {
+		printf("Error: Not in /tmp or cwd\n");
+		return 1;
+	}
+
+	path += strlen(dir);
+
+
+	while (*path != '\0') {
+		if (*path == '/') {
+			printf("Error: Not in /tmp or cwd\n");
+			return 1;
+		}
+		path++;
+	}
+
+	return 0;
+}
+
+int getAbsolutePath(char *fileName, char **absolutePath) {
+	struct cmp_list cmpList;
+	int isAbsolute = 0;
+	char *currFileName = fileName;
+	char c, prev = 0;
+	int twoConsecutiveDots = 0;
+	char *cmpStart = NULL;
+	int done = 0;		
+
+	cmpList.head = NULL;
+	cmpList.tail = NULL;
+
+	if (*fileName == '/') {
+		isAbsolute = 1;
+		prev = '/';
+		currFileName++;
+	}
+
+	cmpStart = currFileName;
+
+	while (1) {
+		c = *currFileName;
+
+		if (prev == '/') {
+			cmpStart = currFileName;
+		}
+
+		int currCmpLen = currFileName - cmpStart;
+
+		switch(c) {
+			case '\0':
+				// TODO free list
+				if (prev == '/') {
+					printf("Error. Can't end in slash\n");
+					return 1;
+				}
+
+				if (currCmpLen == 0) {
+					printf("Error. Can't have an empty file name\n");
+					return 1;
+				}
+				
+				pushCmp(&cmpList, cmpStart, currCmpLen);
+				done = 1;
+				break;
+			case '/':
+				printf("Slash found: CurrCmp Len (%d)\n", currCmpLen);
+				if (twoConsecutiveDots && currCmpLen == 2) {
+					popCmp(&cmpList);
+				} else if (prev && prev != '/') {
+					pushCmp(&cmpList, cmpStart, currCmpLen);
+				}
+				twoConsecutiveDots = 0;
+				break;
+			case '.':
+				if (prev == '.') {
+					twoConsecutiveDots = 1;
+				}
+				break;
+			default:
+				twoConsecutiveDots = 0;
+				break;
+		}
+
+
+		if (done) {
+			break;
+		}
+
+		prev = c;
+		currFileName++;
+	}
+
+	char *path = getAbsolutePathFromList(&cmpList);
+
+	if (isAbsolute) {
+		if (validateAbsolutePath(path)) {
+			return 1;
+		}
+	} else {
+		printf("Validate relative path\n");
+	}
+
+	*absolutePath = path;
+
+	return 0;
+}
+
 void parseLine(char *line) {
 	int error;
 	struct line_struct lineStruct;
@@ -387,20 +586,36 @@ void parseLine(char *line) {
 
 	error = parseField(lineStruct.fileName, &fileNameStruct);
 
+	if (error) {
+		return;
+	}
+
 	escapedFileName = fileNameStruct.field;
 
 	error = parseField(lineStruct.data, &dataStruct);
 
+
+	if (error) {
+		return;
+	}
+
 	escapedData = dataStruct.field;
 
+	char *absolutePath;
+	error = getAbsolutePath(escapedFileName, &absolutePath);
 
-	int escapedFileNameLen = strlen(escapedFileName);
+	if (error) {
+		return;
+	}
+
+
+	int escapedFileNameLen = strlen(absolutePath);
 	int escapedDataLen = strlen(escapedData);
 
 	
 	command = safeMalloc(50 + escapedFileNameLen + escapedDataLen);
 
-	sprintf(command, "echo \"%s\" >> \"%s.nm2805\"", escapedData, escapedFileName);
+	sprintf(command, "echo \"%s\" >> \"%s.nm2805\"", escapedData, absolutePath);
 
 
 	printf("Command: %s\n", command);
