@@ -31,6 +31,7 @@ struct file_node {
 struct cmp_list {
 	struct file_node *head;
 	struct file_node *tail;
+	int isAbsolute;
 };
 
 int endOfInput = 0;
@@ -499,6 +500,11 @@ char *getAbsolutePathFromList(struct cmp_list *cmpList) {
 	struct file_node *window;
 	int currLen = 0;
 
+	if (cmpList->isAbsolute) {
+		*path = '/';
+		currLen++;
+	}
+
 	for (window = cmpList->tail; window != NULL; window = window->prev) {
 		int cmpLen = strlen(window->fileName);
 
@@ -511,20 +517,23 @@ char *getAbsolutePathFromList(struct cmp_list *cmpList) {
 			}
 		}
 
-		
 
-		char *ret = strcat(path, "/");
+		char *ret = strcat(path, window->fileName);
+
+		if (ret == NULL) {
+			printAndExit(NULL);
+		}
+
+		ret = strcat(path, "/");
 
 		if (ret == NULL) {
 			printAndExit(NULL);
 		}
 
-		ret = strcat(path, window->fileName);
-
-		if (ret == NULL) {
-			printAndExit(NULL);
-		}
+		currLen = strlen(path);
 	}
+
+	*(path + currLen - 1) = '\0';
 
 
 	return path;
@@ -563,11 +572,14 @@ int getAbsolutePath(char *fileName, char **absolutePath) {
 
 	cmpList.head = NULL;
 	cmpList.tail = NULL;
+	cmpList.isAbsolute = 0;
+
 
 	if (*fileName == '/') {
 		isAbsolute = 1;
 		prev = '/';
 		currFileName++;
+		cmpList.isAbsolute = 1;
 	}
 
 	cmpStart = currFileName;
@@ -688,6 +700,8 @@ int escapeShellChars(char *line, char **escapedLine) {
 		currEscaped++;
 		line++;
 	}
+
+	*currEscaped = '\0';
 
 	printf("Escaeped string (%s)\n", *escapedLine);
 
