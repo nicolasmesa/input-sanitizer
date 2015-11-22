@@ -130,10 +130,6 @@ char *getInputComponent(char *line) {
 
                 switch (c) {
                         case '\0':
-				if (inQuotes) {
-                                	// TODO display error
-                                	printf("Error. Unexepected end of input\n");
-				}
                                 done = 1;
                                 break;
 
@@ -172,7 +168,6 @@ char *getInputComponent(char *line) {
                 line++;
         }
 
-	// Should not happen
         if (inQuotes) {
 		printf("Quotes error\n");
         	return NULL; 
@@ -698,29 +693,30 @@ int escapeShellChars(char *line, char **escapedLine) {
 
 	while ((c = *line) != '\0') {
 		switch (c) {
-			case '\'':
+			//case '\'':
+			//case '#':
+                        //case '!':
+                        //case '+':
+                        //case '-':
+                        //case '{':
+                        //case '}':
+                        //case '[':
+                        //case ']':
+                        //case '~':
+                        //case '&':
+                        //case '^':
+			//case '|':
+                        //case ';':
+                        //case '>':
+                        //case '<':
+                        //case '(':
+                        //case ')':
+                        //case '*':
+                        //case '?':
+
 			case '"':
 			case '\\':
-			case '|':
-			case ';':
-			case '>':
-			case '<':
-			case '(':
-			case ')':
-			case '*':
-			case '?':
 			case '`':
-			case '#':
-			case '!':
-			case '+':
-			case '-':
-			case '{':
-			case '}':
-			case '[':
-			case ']':
-			case '~':
-			case '&':
-			case '^':
 			case '$':
 				*currEscaped = '\\';
 				currEscaped++;
