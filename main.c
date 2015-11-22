@@ -539,12 +539,26 @@ char *getAbsolutePathFromList(struct cmp_list *cmpList) {
 	return path;
 }
 
-int validateAbsolutePath(char *path) {
+void freeCmpList(struct cmp_list *cmpList) {
+	struct file_node *window;
+	struct file_node *prev;
+
+	for (window = cmpList->head; window != NULL;) {
+		prev = window;
+		window = window->next;
+		free(prev);
+	}
+
+	cmpList->head = NULL;
+	cmpList->tail = NULL;
+}
+
+int absolutePathIsValid(char *path) {
 	char *dir = "/tmp/";
 
 	if (strncmp(path, dir, strlen(dir)) != 0) {
 		printf("Error: Not in /tmp or cwd (%s)\n", path);
-		return 1;
+		return 0;
 	}
 
 	path += strlen(dir);
@@ -553,12 +567,25 @@ int validateAbsolutePath(char *path) {
 	while (*path != '\0') {
 		if (*path == '/') {
 			printf("Error: Not in /tmp or cwd (%s)\n", path);
-			return 1;
+			return 0;
 		}
 		path++;
 	}
 
-	return 0;
+	return 1;
+}
+
+int relativePathIsValid(char *path) {
+	while (*path != '\0') {
+		if (*path == '/') {
+			printf("Invalid relative path\n");
+			return 0;
+		}
+
+		path++;
+	}
+
+	return 1;
 }
 
 int getAbsolutePath(char *fileName, char **absolutePath) {
@@ -598,11 +625,13 @@ int getAbsolutePath(char *fileName, char **absolutePath) {
 				// TODO free list
 				if (prev == '/') {
 					printf("Error. Can't end in slash\n");
+					freeCmpList(&cmpList);
 					return 1;
 				}
 
 				if (currCmpLen == 0) {
 					printf("Error. Can't have an empty file name\n");
+					freeCmpList(&cmpList);
 					return 1;
 				}
 				
@@ -644,12 +673,18 @@ int getAbsolutePath(char *fileName, char **absolutePath) {
 	char *path = getAbsolutePathFromList(&cmpList);
 
 	if (isAbsolute) {
-		if (validateAbsolutePath(path)) {
+		if (!absolutePathIsValid(path)) {
+			freeCmpList(&cmpList);
 			return 1;
 		}
 	} else {
-		printf("Validate relative path\n");
+		if (!relativePathIsValid(path)) {
+			freeCmpList(&cmpList);
+			return 1;
+		}
 	}
+
+	freeCmpList(&cmpList);
 
 	*absolutePath = path;
 
