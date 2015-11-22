@@ -138,7 +138,7 @@ char *getInputComponent(char *line) {
 
                         case '\t':
                         case ' ':
-                                if (!inQuotes && prevChar != '\\') {
+                                if (!inQuotes) {
                                         done = 1;
                                 }
                                 break;
@@ -348,10 +348,10 @@ int isValidCharRange(char c) {
 	unsigned char uc = c;
 
 	if (uc >=1 && uc <= 255) {
-		return 0;
+		return 1;
 	}
 
-	return 1;
+	return 0;
 }
 
 
@@ -424,39 +424,19 @@ int parseField(char *fieldText, struct field_struct *fieldStruct) {
 			break;
 		}
 
-
-		if (!fieldStruct->quoted) {
-			if (!isInAllLettersRange(c)) {
-				free(escapedField);
-                        	return 1;
+		if (fieldStruct->quoted) {
+			if(c == '\\') {
+                        	parseEscapeSquence(&curr, &currEscaped);
+			} else {
+				 *currEscaped = *curr;
 			}
-			
-			*currEscaped = *curr;
-                        prev = *curr;
-                        curr++;
-                        currEscaped++;
+		} else {
+			if (!isInAllLettersRange(c)) {
+                                free(escapedField);
+                                return 1;
+                        }
 
-                        continue;
-		}
-
-
-		if (isalnum(c)) {
-			*currEscaped = *curr;
-			prev = *curr;
-			curr++;
-			currEscaped++;
-
-			continue;
-		}
-
-		switch (c) {
-			case '\\':
-				parseEscapeSquence(&curr, &currEscaped);
-				break;
-			default:
-				*currEscaped = *curr;
-				break;
-
+                        *currEscaped = *curr;
 		}
 
 
