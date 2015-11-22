@@ -331,6 +331,11 @@ int parseEscapeSquence(char **startOfSequence, char **currEscapedFileName) {
 			return 1;
 		}
 
+		if (num > 255) {
+			printf("Error: Octal number outside of range\n");
+			return 1;
+		}
+
 		*currEscaped = (char) num;
 	}
 
