@@ -105,6 +105,80 @@ char *getLine() {
   return returnLine;
 }
 
+/**
+ * Returns the end of the component
+ */
+char *getInputComponent(char *line) {
+	 int lineLen = strlen(line);
+        char *start = line;
+        char quoteChar = 0;
+        char prevChar = 0;
+        int inQuotes = 0;
+        int done = 0;
+
+        if (*line == '"' || *line == '\'') {
+                quoteChar = *line;
+                prevChar = *line;
+                line++;
+                inQuotes = 1;
+        }
+
+
+        while (1) {
+                char c = *line;
+
+                switch (c) {
+                        case '\0':
+				if (inQuotes) {
+                                	// TODO display error
+                                	printf("Error. Unexepected end of input\n");
+				}
+                                done = 1;
+                                break;
+
+                        case '\t':
+                        case ' ':
+                                if (!inQuotes && prevChar != '\\') {
+                                        done = 1;
+                                }
+                                break;
+
+                        case '\'':
+                                if (inQuotes && quoteChar == c && prevChar != '\\') {
+                                        inQuotes = 0;
+                                        line++;
+                                        done = 1;
+                                }
+                                break;
+
+                        case '"':
+                                if (inQuotes && quoteChar == c && prevChar != '\\') {
+                                        inQuotes = 0;
+                                        line++;
+                                        done = 1;
+                                }
+                                break;
+
+                        default:
+                                break;
+                }
+
+                if (done) {
+                        break;
+                }
+
+                prevChar = *line;
+                line++;
+        }
+
+	// Should not happen
+        if (inQuotes) {
+		printf("Quotes error\n");
+        	return NULL; 
+        }
+
+	return line;
+}
 
 int getLineComponents(char *line, struct line_struct *lineStruct) {
 	int lineLen = strlen(line);
@@ -115,73 +189,23 @@ int getLineComponents(char *line, struct line_struct *lineStruct) {
 	int inQuotes = 0;
 	int done = 0;
 
-	if (*line == '"' || *line == '\'') {
-		quoteChar = *line;
-		prevChar = *line;
-		line++;
-		inQuotes = 1;
-	}
 
+	line = getInputComponent(line);
 
-	while (1) {
-		char c = *line;
-
-		switch (c) {
-			case '\0':
-				// TODO display error
-				printf("Error. Unexepected end of input\n");
-				done = 1;
-				break;
-
-			case '\t':
-			case ' ':
-				if (!inQuotes && prevChar != '\\') {
-					done = 1;
-				}
-				break;
-
-			case '\'':
-				if (inQuotes && quoteChar == c && prevChar != '\\') {
-					inQuotes = 0;
-					line++;
-					done = 1;
-				}
-				break;
-
-			case '"':
-                                if (inQuotes && quoteChar == c && prevChar != '\\') {
-                                        inQuotes = 0;
-					line++;
-                                        done = 1;
-                                }
-                                break;
-
-			default:
-				break;
-		}
-
-		if (done) {
-			break;
-		}
-
-		prevChar = *line;
-		line++;
-	}
-
-
-	// Should not happen
-	if (inQuotes) {
-		printAndExit("Unexpected end of file name. Still in quotes\n");
-	}	
-
-	if (*line != ' ' && *line != '\t') {
-		printf("Invalid (%s)\n", line);
+	if (line == NULL) {
 		return 1;
 	}
 
 
+	if (*line != ' ' && *line != '\t') {
+		printf("Invalid: Expected space of tab at (%s)\n", line);
+		return 1;
+	}
+
 	*line = '\0';
 	line++;
+
+	printf("filename: (%s)\n", fileNameStart);
 
 	while (1) {
 		if  (*line != ' ' && *line != '\t') {
@@ -193,10 +217,22 @@ int getLineComponents(char *line, struct line_struct *lineStruct) {
 
 	// TODO
 	if (*line == '\0') {
-		printAndExit("Data field can't be the empty string");
+		printf("Data field can't be the empty string\n");
+		return 1;
 	}
 
 	dataStart = line;
+
+	line = getInputComponent(line);
+
+	if (line == NULL) {
+		return 1;
+	}
+
+	if (*line != '\0') {
+		printf("Unexpected (%s)\n", line);
+		return 1;
+	}
 
 	lineStruct->fileName = fileNameStart;
 	lineStruct->data = dataStart;
@@ -307,6 +343,60 @@ int parseEscapeSquence(char **startOfSequence, char **currEscapedFileName) {
 	return 0;
 }
 
+
+int isValidCharRange(char c) {
+	unsigned char uc = c;
+
+	if (uc >=1 && uc <= 255) {
+		return 0;
+	}
+
+	return 1;
+}
+
+
+int isInAllLettersRange(char c) {
+	unsigned char uc = c;
+
+
+	if (isalnum(uc)) {
+		printf("(%c) is alphanum\n", c);
+		return 1;
+	}
+
+	switch (uc) {
+		case 131: // Letters
+		case 138:
+		case 140:
+		case 142:
+		case 154:
+		case 156:
+		case 158:
+		case 159:
+		case 170:
+		case 186: // letters
+		case 178: //Superscripts 
+		case 179:
+		case 185:
+			printf("(%c) is in range of switch\n", c);
+			return 1;
+
+		case 215: // Exceptions
+		case 247:
+			return 0;
+
+		default:
+			if (uc >= 192 && uc <= 255) {
+				printf("(%c) is in range\n", c);
+				return 1;
+			}
+
+	}
+
+	printf("(%c) is not alphanum\n", c);
+        return 0;
+}
+
 int parseField(char *fieldText, struct field_struct *fieldStruct) {
 	int fieldLen = strlen(fieldText);
 	char *curr = fieldText;
@@ -326,7 +416,6 @@ int parseField(char *fieldText, struct field_struct *fieldStruct) {
 		curr++;
 	}	
 
-	// TODO realloc escapedFileName if necessary
 	while (1) {
 		c = *curr;
 
@@ -334,6 +423,22 @@ int parseField(char *fieldText, struct field_struct *fieldStruct) {
 			*currEscaped = '\0';
 			break;
 		}
+
+
+		if (!fieldStruct->quoted) {
+			if (!isInAllLettersRange(c)) {
+				free(escapedField);
+                        	return 1;
+			}
+			
+			*currEscaped = *curr;
+                        prev = *curr;
+                        curr++;
+                        currEscaped++;
+
+                        continue;
+		}
+
 
 		if (isalnum(c)) {
 			*currEscaped = *curr;
@@ -627,7 +732,7 @@ void parseLine(char *line) {
 
 
 	if (error) {
-		printf("Error returned");
+		printf("Error returned\n");
 		return;
 	}
 
