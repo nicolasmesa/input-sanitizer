@@ -114,6 +114,7 @@ char *getInputComponent(char *line) {
         char *start = line;
         char quoteChar = 0;
         char prevChar = 0;
+        char prevPrevChar = 0;
         int inQuotes = 0;
         int done = 0;
 
@@ -140,20 +141,20 @@ char *getInputComponent(char *line) {
                                 }
                                 break;
 
-                        case '\'':
-                                if (inQuotes && quoteChar == c && prevChar != '\\') {
-                                        inQuotes = 0;
-                                        line++;
-                                        done = 1;
-                                }
-                                break;
-
+                        case '\'': // Intentional fall through
                         case '"':
-                                if (inQuotes && quoteChar == c && prevChar != '\\') {
-                                        inQuotes = 0;
-                                        line++;
-                                        done = 1;
-                                }
+				if (inQuotes && quoteChar == c) {
+					// TODO: Change for ||
+                                	if (prevChar != '\\') {
+                                        	inQuotes = 0;
+                                        	line++;
+                                        	done = 1;
+                                	} else if (prevChar == '\\' && prevPrevChar == '\\') {
+						inQuotes = 0;
+						line++;
+						done = 1;
+					}
+				}
                                 break;
 
                         default:
@@ -164,6 +165,7 @@ char *getInputComponent(char *line) {
                         break;
                 }
 
+		prevPrevChar = prevChar;
                 prevChar = *line;
                 line++;
         }
@@ -629,7 +631,6 @@ int getAbsolutePath(char *fileName, char **absolutePath) {
 
 		switch(c) {
 			case '\0':
-				// TODO free list
 				if (prev == '/') {
 					printf("Error. Can't end in slash\n");
 					freeCmpList(&cmpList);
