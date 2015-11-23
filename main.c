@@ -312,7 +312,8 @@ int parseEscapeSquence(char **startOfSequence, char **currEscapedFileName) {
 			int digitVal = atoi(digit);
 
 			if (digitVal > 7) {
-				break;
+				printf("Error: Octal digits can't be greater than 7\n");
+				return 1;
 			}
 
 			num = num * 8 + digitVal;
@@ -404,6 +405,7 @@ int parseField(char *fieldText, struct field_struct *fieldStruct) {
 	char *currEscaped;
 	char *escapedField;
 	char c, prev = 0;
+	int error = 0;
 
 	escapedField = safeMalloc(fieldLen + 1);
 	currEscaped = escapedField;
@@ -427,7 +429,12 @@ int parseField(char *fieldText, struct field_struct *fieldStruct) {
 
 		if (fieldStruct->quoted) {
 			if(c == '\\') {
-                        	parseEscapeSquence(&curr, &currEscaped);
+                        	error = parseEscapeSquence(&curr, &currEscaped);
+
+				if (error) {
+					free(escapedField);
+					return 1;
+				}
 			} else {
 				 *currEscaped = *curr;
 			}
@@ -629,6 +636,18 @@ int getAbsolutePath(char *fileName, char **absolutePath) {
 					return 1;
 				}
 
+				if (prev == '.' && currCmpLen == 1) {
+					printf("Error. Can't end in .\n");
+					freeCmpList(&cmpList);
+					return 1;
+				}
+
+				if (twoConsecutiveDots && currCmpLen == 2) {
+					printf("Error. Can't end in ..\n");
+					freeCmpList(&cmpList);
+					return 1;
+				}
+
 				if (currCmpLen == 0) {
 					printf("Error. Can't have an empty file name\n");
 					freeCmpList(&cmpList);
@@ -775,20 +794,20 @@ void parseLine(char *line) {
 		return;
 	}
 
-	escapedFileName = fileNameStruct.field;
-
 	error = parseField(lineStruct.data, &dataStruct);
 
-
 	if (error) {
+		free(fileNameStruct.field);
 		return;
 	}
 
 
 	char *absolutePath;
-	error = getAbsolutePath(escapedFileName, &absolutePath);
+	error = getAbsolutePath(fileNameStruct.field, &absolutePath);
 
 	if (error) {
+                free(fileNameStruct.field);
+		free(dataStruct.field);
 		return;
 	}
 
@@ -813,6 +832,9 @@ void parseLine(char *line) {
 
 	printf("\n---------------------------------------------\n\n");
 
+	free(escapedFileName);
+	free(escapedData);
+	free(absolutePath);
 	free(command);
 	free(fileNameStruct.field);
 	free(dataStruct.field);
