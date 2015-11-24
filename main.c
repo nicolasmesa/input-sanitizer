@@ -544,6 +544,7 @@ char *getAbsolutePathFromList(struct cmp_list *cmpList) {
   int currLen = 0;
 
   *path = '/';
+  *(path + 1) = '\0';
   currLen++;
 
   for (window = cmpList->tail; window != NULL; window = window->prev) {
