@@ -192,7 +192,6 @@ char *getInputComponent(char *line) {
         }
 
         if (inQuotes) {
-		printf("Quotes error\n");
         	return NULL; 
         }
 
@@ -217,14 +216,11 @@ int getLineComponents(char *line, struct line_struct *lineStruct) {
 
 
 	if (*line != ' ' && *line != '\t') {
-		printf("Invalid: Expected space of tab at (%s)\n", line);
 		return 1;
 	}
 
 	*line = '\0';
 	line++;
-
-	printf("filename: (%s)\n", fileNameStart);
 
 	while (1) {
 		if  (*line != ' ' && *line != '\t') {
@@ -236,7 +232,6 @@ int getLineComponents(char *line, struct line_struct *lineStruct) {
 
 	// TODO
 	if (*line == '\0') {
-		printf("Data field can't be the empty string\n");
 		return 1;
 	}
 
@@ -249,7 +244,6 @@ int getLineComponents(char *line, struct line_struct *lineStruct) {
 	}
 
 	if (*line != '\0') {
-		printf("Unexpected (%s)\n", line);
 		return 1;
 	}
 
@@ -324,7 +318,6 @@ int parseEscapeSquence(char **startOfSequence, char **currEscapedFileName, char 
 			}
 
 			// Escaping something that should not be escaped
-			printf("char (%c) is not escapeable\n", *currSeq);
 			return 1;
 	}
 
@@ -340,14 +333,10 @@ int parseEscapeSquence(char **startOfSequence, char **currEscapedFileName, char 
 		int num = 0;
 
 		while (isdigit(*currSeq)) {
-			printf("Analyzinng (%c)\n", *currSeq);
-
-
 			digit[0] = *currSeq;
 			int digitVal = atoi(digit);
 
 			if (digitVal > 7) {
-				printf("Error: Octal digits can't be greater than 7\n");
 				return 1;
 			}
 
@@ -363,17 +352,14 @@ int parseEscapeSquence(char **startOfSequence, char **currEscapedFileName, char 
 		}
 
 		if (num == 0) {
-			printf("Error: can't have NUL char\n");
 			return 1;
 		}
 
 		if (num > 255) {
-			printf("Error: Octal number outside of range\n");
 			return 1;
 		}
 
 		if (numDigits < 3) {
-			printf("Error: Octal numbers have to have 3 digits\n");
 			return 1;
 		}
 
@@ -401,7 +387,6 @@ int isInAllLettersRange(char c) {
 
 
 	if (isAlphaNum(c)) {
-		printf("(%c) is alphanum\n", c);
 		return 1;
 	}
 
@@ -419,7 +404,6 @@ int isInAllLettersRange(char c) {
 		case 178: //Superscripts 
 		case 179:
 		case 185:
-			printf("(%c) is in range of switch\n", c);
 			return 1;
 
 		case 215: // Exceptions
@@ -428,13 +412,11 @@ int isInAllLettersRange(char c) {
 
 		default:
 			if (uc >= 192 && uc <= 255) {
-				printf("(%c) is in range\n", c);
 				return 1;
 			}
 
 	}
 
-	printf("(%c) is not alphanum\n", c);
         return 0;
 }
 
@@ -471,7 +453,6 @@ int parseField(char *fieldText, struct field_struct *fieldStruct) {
                         	error = parseEscapeSquence(&curr, &currEscaped, fieldStruct->quote);
 
 				if (error) {
-					printf("Error in escape (%s)\n", curr);
 					free(escapedField);
 					return 1;
 				}
@@ -525,7 +506,6 @@ void pushCmp(struct cmp_list *cmpList, char *cmpStart, int cmpLen) {
 
 void popCmp(struct cmp_list *cmpList) {
 	if (cmpList->head == NULL) {
-		printf("Going beyond /\n");
 		return;
 	}
 
@@ -653,7 +633,6 @@ int absolutePathIsValid(char *path) {
 int relativePathIsValid(char *path) {
 	while (*path != '\0') {
 		if (*path == '/') {
-			printf("Invalid relative path\n");
 			return 0;
 		}
 
@@ -707,13 +686,6 @@ int getAbsolutePath(char *fileName, char **absolutePath) {
 
 		switch(c) {
 			case '\0':
-				// TODO: decide if delete this or not
-				if (0 && twoConsecutiveDots && currCmpLen == 2) {
-					printf("Error. Can't end in ..\n");
-					freeCmpList(&cmpList);
-					return 1;
-				}
-
 				pushCmp(&cmpList, cmpStart, currCmpLen);
 				done = 1;
 				break;
@@ -758,8 +730,6 @@ int getAbsolutePath(char *fileName, char **absolutePath) {
 			free(fileName);
 		}
 	
-		printf("Invalid path (%s)\n", path);
-
 		return 1;
 	}
 
@@ -822,12 +792,11 @@ int escapeShellChars(char *line, char **escapedLine) {
 
 	*currEscaped = '\0';
 
-	printf("Escaeped string (%s)\n", *escapedLine);
 
 	return 0;
 }
 
-void parseLine(char *line) {
+int parseLine(char *line) {
 	int error;
 	struct line_struct lineStruct;
 	lineStruct.fileName = NULL;
@@ -839,30 +808,24 @@ void parseLine(char *line) {
 	char *command;
 	char quote = 0;
 
-	printf("line: (%s)\n", line);
-
 	error = getLineComponents(line, &lineStruct);
 
 
 	if (error) {
-		printf("Error returned\n");
-		return;
+		return 1;
 	}
-
-	printf("Unescaped filename: (%s)\n", lineStruct.fileName);
-	printf("Unescaped Data: (%s)\n", lineStruct.data);
 
 	error = parseField(lineStruct.fileName, &fileNameStruct);
 
 	if (error) {
-		return;
+		return 1;
 	}
 
 	error = parseField(lineStruct.data, &dataStruct);
 
 	if (error) {
 		free(fileNameStruct.field);
-		return;
+		return 1;
 	}
 
 
@@ -872,10 +835,9 @@ void parseLine(char *line) {
 	if (error) {
                 free(fileNameStruct.field);
 		free(dataStruct.field);
-		return;
+		return 1;
 	}
 
-	printf("Absolute path (%s)\n", absolutePath);
 
 	escapeShellChars(absolutePath, &escapedFileName);
 	escapeShellChars(dataStruct.field, &escapedData);
@@ -889,12 +851,7 @@ void parseLine(char *line) {
 	sprintf(command, "echo \"%s\" >> \"%s.nm2805\"", escapedData, escapedFileName);
 
 
-	printf("Command: %s\n", command);
-
-	
 	system(command);
-
-	printf("\n---------------------------------------------\n\n");
 
 	free(escapedFileName);
 	free(escapedData);
@@ -902,6 +859,8 @@ void parseLine(char *line) {
 	free(command);
 	free(fileNameStruct.field);
 	free(dataStruct.field);
+
+	return 0;
 }
 
 int main(int argc, char **argv) {
@@ -914,7 +873,13 @@ int main(int argc, char **argv) {
 			break;
 		}
 
-		parseLine(line);
+		printf("(%s):\t", line);
+
+		int ret = parseLine(line);
+
+		printf("%d\n", ret);
+
+		
 
 		free(line);
 
