@@ -52,7 +52,9 @@ void printAndExit(char *msg) {
   exit(1);
 }
 
-
+/**
+ * Performs a malloc and exits if it fails
+ */
 void *safeMalloc(size_t len) {
   void *new = malloc(len);
 
@@ -63,7 +65,9 @@ void *safeMalloc(size_t len) {
   return new;
 }
 
-
+/**
+ * My own non-locale dependant version of isdigit
+ */
 int isDigit(char c) {
         if (c >= 48 && c <= 57) {
                 return 1;
@@ -72,6 +76,9 @@ int isDigit(char c) {
         return 0;
 }
 
+/**
+ * My own non locale dependant version of isalnum
+ */
 int isAlphaNum(char c) {
 	if (isDigit(c)) {
 		return 1;
@@ -132,7 +139,7 @@ char *getLine() {
 }
 
 /**
- * Returns the end of the component
+ * Returns the end of the component (component being a file path or data field)
  */
 char *getInputComponent(char *line) {
 	 int lineLen = strlen(line);
@@ -203,6 +210,10 @@ char *getInputComponent(char *line) {
 	return line;
 }
 
+/**
+ * Sets the line components (file path and data field) to the
+ * lineStruct. Returns 1 in case of failure, 0 otherwise
+ */
 int getLineComponents(char *line, struct line_struct *lineStruct) {
 	int lineLen = strlen(line);
 	char *fileNameStart = line;
@@ -257,6 +268,9 @@ int getLineComponents(char *line, struct line_struct *lineStruct) {
 	return 0;
 }
 
+/**
+ * Substitutes the escape sequence with the actual character
+ */
 int parseEscapeSquence(char **startOfSequence, char **currEscapedFileName, char quote) {
 	char *currSeq = *startOfSequence;
 	char *currEscaped = *currEscapedFileName;
@@ -370,7 +384,10 @@ int parseEscapeSquence(char **startOfSequence, char **currEscapedFileName, char 
 	return 0;
 }
 
-
+/**
+ * Validates that the passed char is in range
+ * according to the spec
+ */
 int isValidCharRange(char c) {
 	unsigned char uc = c;
 
@@ -381,6 +398,10 @@ int isValidCharRange(char c) {
 	return 0;
 }
 
+/**
+ * Verifies that the character is a valid character
+ * according to the specs
+ */
 int isInAllLettersRange(char c) {
 	unsigned char uc = c;
 
@@ -418,6 +439,10 @@ int isInAllLettersRange(char c) {
         return 0;
 }
 
+/**
+ * Parses a field performing the substitution of escape 
+ * characters. Returns 1 on error, 0 otherwise
+ */
 int parseField(char *fieldText, struct field_struct *fieldStruct) {
 	int fieldLen = strlen(fieldText);
 	char *curr = fieldText;
@@ -483,6 +508,9 @@ int parseField(char *fieldText, struct field_struct *fieldStruct) {
 	return 0;
 }
 
+/**
+ * Pushes a component to the component stack, if there are any
+ */
 void pushCmp(struct cmp_list *cmpList, char *cmpStart, int cmpLen) {
 	struct file_node *newNode = safeMalloc(sizeof(struct file_node));
 	char *cmp;
@@ -502,6 +530,9 @@ void pushCmp(struct cmp_list *cmpList, char *cmpStart, int cmpLen) {
 	cmpList->head = newNode;
 }
 
+/**
+ * Pops a component from the component stack
+ */
 void popCmp(struct cmp_list *cmpList) {
 	if (cmpList->head == NULL) {
 		return;
@@ -519,6 +550,9 @@ void popCmp(struct cmp_list *cmpList) {
 	free(toDelete);
 }
 
+/**
+ * Transforms the list into an absolute path;
+ */
 char *getAbsolutePathFromList(struct cmp_list *cmpList) {
 	int memLen = 100;
 	char *path = safeMalloc(memLen);
@@ -562,6 +596,9 @@ char *getAbsolutePathFromList(struct cmp_list *cmpList) {
 	return path;
 }
 
+/**
+ * Frees the cmp stack
+ */
 void freeCmpList(struct cmp_list *cmpList) {
 	struct file_node *window;
 	struct file_node *prev;
@@ -576,6 +613,9 @@ void freeCmpList(struct cmp_list *cmpList) {
 	cmpList->tail = NULL;
 }
 
+/**
+ * Verifies if the absolute path is in the CWD
+ */
 int absolutePathIsValidCwd(char *path) {
         char *dir = startDir;
 
@@ -596,6 +636,9 @@ int absolutePathIsValidCwd(char *path) {
         return 1;
 }
 
+/**
+ * Verifies that the absolute path is in /tmp/
+ */
 int absolutePathIsValidTmp(char *path) {
 	char *dir = "/tmp/";
 
@@ -616,6 +659,10 @@ int absolutePathIsValidTmp(char *path) {
 	return 1;
 }
 
+/**
+ * Makes sure that the path is in either /tmp/ or
+ * the CWD
+ */
 int absolutePathIsValid(char *path) {
 	if(absolutePathIsValidTmp(path)) {
 		return 1;
@@ -628,18 +675,10 @@ int absolutePathIsValid(char *path) {
 	return 0;
 }
 
-int relativePathIsValid(char *path) {
-	while (*path != '\0') {
-		if (*path == '/') {
-			return 0;
-		}
-
-		path++;
-	}
-
-	return 1;
-}
-
+/**
+ * Parses the path getting rid of ../, //, or ./ and
+ * making it a single absolute path
+ */
 int getAbsolutePath(char *fileName, char **absolutePath) {
 	struct cmp_list cmpList;
 	int isAbsolute = 0;
@@ -742,6 +781,9 @@ int getAbsolutePath(char *fileName, char **absolutePath) {
 	return 0;
 }
 
+/**
+ * Escapes the dangerous characters of the shell
+ */
 int escapeShellChars(char *line, char **escapedLine) {
 	*escapedLine = safeMalloc(strlen(line) * 2);
 	char *currEscaped = *escapedLine;
@@ -794,6 +836,9 @@ int escapeShellChars(char *line, char **escapedLine) {
 	return 0;
 }
 
+/**
+ * Parses the line and executes the command
+ */
 int parseLine(char *line) {
 	int error;
 	struct line_struct lineStruct;
@@ -860,6 +905,9 @@ int parseLine(char *line) {
 	return 0;
 }
 
+/**
+ * Main function. Reads lines and executes them
+ */
 int main(int argc, char **argv) {
 
 	while (!endOfInput) {
