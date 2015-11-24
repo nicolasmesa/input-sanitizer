@@ -73,6 +73,10 @@ int isDigit(char c) {
 }
 
 int isAlphaNum(char c) {
+	if (isDigit(c)) {
+		return 1;
+	}
+
         if (c >= 65 && c <= 90) {
                 return 1;
         }
@@ -138,6 +142,7 @@ char *getInputComponent(char *line) {
         char prevPrevChar = 0;
         int inQuotes = 0;
         int done = 0;
+	int numEscapes = 0;
 
         if (*line == '"' || *line == '\'') {
                 quoteChar = *line;
@@ -160,25 +165,25 @@ char *getInputComponent(char *line) {
                                 if (!inQuotes) {
                                         done = 1;
                                 }
+				numEscapes = 0;
                                 break;
 
                         case '\'': // Intentional fall through
                         case '"':
-				if (inQuotes && quoteChar == c) {
-					// TODO: Change for ||
-                                	if (prevChar != '\\') {
-                                        	inQuotes = 0;
-                                        	line++;
-                                        	done = 1;
-                                	} else if (prevChar == '\\' && prevPrevChar == '\\') {
-						inQuotes = 0;
-						line++;
-						done = 1;
-					}
+				if (inQuotes && quoteChar == c && (numEscapes % 2 == 0)) {
+					inQuotes = 0;
+					line++;
+					done = 1;
 				}
+				numEscapes = 0;
                                 break;
 
+			case '\\':
+				numEscapes++;
+				break;
+
                         default:
+				numEscapes = 0;
                                 break;
                 }
 
@@ -213,7 +218,6 @@ int getLineComponents(char *line, struct line_struct *lineStruct) {
 	if (line == NULL) {
 		return 1;
 	}
-
 
 	if (*line != ' ' && *line != '\t') {
 		return 1;
@@ -280,11 +284,6 @@ int parseEscapeSquence(char **startOfSequence, char **currEscapedFileName, char 
 
 		case 'r':
 			*currEscaped = '\r';
-			done = 1;
-			break;
-
-		case ' ':
-			*currEscaped = ' ';
 			done = 1;
 			break;
 
@@ -384,7 +383,6 @@ int isValidCharRange(char c) {
 
 int isInAllLettersRange(char c) {
 	unsigned char uc = c;
-
 
 	if (isAlphaNum(c)) {
 		return 1;
@@ -849,7 +847,6 @@ int parseLine(char *line) {
 	command = safeMalloc(50 + escapedFileNameLen + escapedDataLen);
 
 	sprintf(command, "echo \"%s\" >> \"%s.nm2805\"", escapedData, escapedFileName);
-
 
 	system(command);
 
