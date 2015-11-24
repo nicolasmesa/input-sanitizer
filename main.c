@@ -31,10 +31,11 @@ struct file_node {
 struct cmp_list {
 	struct file_node *head;
 	struct file_node *tail;
-	int isAbsolute;
 };
 
 int endOfInput = 0;
+
+char *startDir = "/home/nm2805/";
 
 
 /**
@@ -509,10 +510,8 @@ char *getAbsolutePathFromList(struct cmp_list *cmpList) {
 	struct file_node *window;
 	int currLen = 0;
 
-	if (cmpList->isAbsolute) {
-		*path = '/';
-		currLen++;
-	}
+	*path = '/';
+	currLen++;
 
 	for (window = cmpList->tail; window != NULL; window = window->prev) {
 		int cmpLen = strlen(window->fileName);
@@ -562,11 +561,30 @@ void freeCmpList(struct cmp_list *cmpList) {
 	cmpList->tail = NULL;
 }
 
-int absolutePathIsValid(char *path) {
+int absolutePathIsValidCwd(char *path) {
+        char *dir = startDir;
+
+        if (strncmp(path, dir, strlen(dir)) != 0) {
+                return 0;
+        }
+
+        path += strlen(dir);
+
+
+        while (*path != '\0') {
+                if (*path == '/') {
+                        return 0;
+                }
+                path++;
+        }
+
+        return 1;
+}
+
+int absolutePathIsValidTmp(char *path) {
 	char *dir = "/tmp/";
 
 	if (strncmp(path, dir, strlen(dir)) != 0) {
-		printf("Error: Not in /tmp or cwd (%s)\n", path);
 		return 0;
 	}
 
@@ -575,13 +593,24 @@ int absolutePathIsValid(char *path) {
 
 	while (*path != '\0') {
 		if (*path == '/') {
-			printf("Error: Not in /tmp or cwd (%s)\n", path);
 			return 0;
 		}
 		path++;
 	}
 
 	return 1;
+}
+
+int absolutePathIsValid(char *path) {
+	if(absolutePathIsValidTmp(path)) {
+		return 1;
+	}
+
+	if (absolutePathIsValidCwd(path)) {
+		return 1;
+	}
+
+	return 0;
 }
 
 int relativePathIsValid(char *path) {
@@ -608,15 +637,25 @@ int getAbsolutePath(char *fileName, char **absolutePath) {
 
 	cmpList.head = NULL;
 	cmpList.tail = NULL;
-	cmpList.isAbsolute = 0;
-
 
 	if (*fileName == '/') {
 		isAbsolute = 1;
-		prev = '/';
-		currFileName++;
-		cmpList.isAbsolute = 1;
+	} else {
+		int size = strlen(startDir) + strlen(fileName) + 1;
+		char *tempFileName = safeMalloc(size + 1);
+		int ret = snprintf(tempFileName, size, "%s%s", startDir, fileName);
+
+		if (ret >  size) {
+			free(tempFileName);
+			return 1;
+		}
+
+		fileName = tempFileName;
+		currFileName = fileName;
 	}
+
+        prev = '/';
+       	currFileName++;
 
 	cmpStart = currFileName;
 
@@ -692,16 +731,20 @@ int getAbsolutePath(char *fileName, char **absolutePath) {
 
 	char *path = getAbsolutePathFromList(&cmpList);
 
-	if (isAbsolute) {
-		if (!absolutePathIsValid(path)) {
-			freeCmpList(&cmpList);
-			return 1;
+	if (!absolutePathIsValid(path)) {
+		freeCmpList(&cmpList);
+
+		if (!isAbsolute) {
+			free(fileName);
 		}
-	} else {
-		if (!relativePathIsValid(path)) {
-			freeCmpList(&cmpList);
-			return 1;
-		}
+	
+		printf("Invalid path (%s)\n", path);
+
+		return 1;
+	}
+
+	if (!isAbsolute) {
+		free(fileName);
 	}
 
 	freeCmpList(&cmpList);
