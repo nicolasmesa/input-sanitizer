@@ -140,8 +140,6 @@ char *getLine() {
  * Returns the end of the component (component being a file path or data field)
  */
 char *getInputComponent(char *line) {
-  int lineLen = strlen(line);
-  char *start = line;
   char quoteChar = 0;
   char prevChar = 0;
   char prevPrevChar = 0;
@@ -212,13 +210,8 @@ char *getInputComponent(char *line) {
  * lineStruct. Returns 1 in case of failure, 0 otherwise
  */
 int getLineComponents(char *line, struct line_struct *lineStruct) {
-  int lineLen = strlen(line);
   char *fileNameStart = line;
   char *dataStart = NULL;
-  char quoteChar = 0;
-  char prevChar = 0;
-  int inQuotes = 0;
-  int done = 0;
 
   line = getInputComponent(line);
 
@@ -833,7 +826,6 @@ int parseLine(char *line) {
   char *escapedFileName;
   char *escapedData;
   char *command;
-  char quote = 0;
 
   error = getLineComponents(line, &lineStruct);
 
