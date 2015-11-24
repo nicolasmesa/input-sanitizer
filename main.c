@@ -64,6 +64,26 @@ void *safeMalloc(size_t len) {
 }
 
 
+int isDigit(char c) {
+        if (c >= 48 && c <= 57) {
+                return 1;
+        }
+
+        return 0;
+}
+
+int isAlphaNum(char c) {
+        if (c >= 65 && c <= 90) {
+                return 1;
+        }
+
+        if (c >= 97 & c <= 122) {
+                return 1;
+        }
+
+        return 0;
+}
+
 /**
  * Gets a line from STDIN. The caller is responsible for
  * freeing the memory of the line. If it reaches the end
@@ -286,7 +306,7 @@ int parseEscapeSquence(char **startOfSequence, char **currEscapedFileName) {
 			break;
 
 		default:
-			if (isdigit(*currSeq)) {
+			if (isDigit(*currSeq)) {
 				done = 0;
 				break;
 			}
@@ -303,8 +323,8 @@ int parseEscapeSquence(char **startOfSequence, char **currEscapedFileName) {
 
 
 	//Octal
-	if (isdigit(*currSeq)) {
-		int numDigits = 1;
+	if (isDigit(*currSeq)) {
+		int numDigits = 0;
 		int num = 0;
 
 		while (isdigit(*currSeq)) {
@@ -321,11 +341,11 @@ int parseEscapeSquence(char **startOfSequence, char **currEscapedFileName) {
 
 			num = num * 8 + digitVal;
 
-			if (numDigits >= 3) {
-				break;
-			}
-
 			numDigits++;
+
+			if (numDigits >= 3) {
+                                break;
+                        }
 
 			currSeq++;
 		}
@@ -337,6 +357,11 @@ int parseEscapeSquence(char **startOfSequence, char **currEscapedFileName) {
 
 		if (num > 255) {
 			printf("Error: Octal number outside of range\n");
+			return 1;
+		}
+
+		if (numDigits < 3) {
+			printf("Error: Octal numbers have to have 3 digits\n");
 			return 1;
 		}
 
@@ -359,12 +384,11 @@ int isValidCharRange(char c) {
 	return 0;
 }
 
-
 int isInAllLettersRange(char c) {
 	unsigned char uc = c;
 
 
-	if (isalnum(uc)) {
+	if (isAlphaNum(c)) {
 		printf("(%c) is alphanum\n", c);
 		return 1;
 	}
@@ -670,30 +694,13 @@ int getAbsolutePath(char *fileName, char **absolutePath) {
 
 		switch(c) {
 			case '\0':
-				if (prev == '/') {
-					printf("Error. Can't end in slash\n");
-					freeCmpList(&cmpList);
-					return 1;
-				}
-
-				if (prev == '.' && currCmpLen == 1) {
-					printf("Error. Can't end in .\n");
-					freeCmpList(&cmpList);
-					return 1;
-				}
-
-				if (twoConsecutiveDots && currCmpLen == 2) {
+				// TODO: decide if delete this or not
+				if (0 && twoConsecutiveDots && currCmpLen == 2) {
 					printf("Error. Can't end in ..\n");
 					freeCmpList(&cmpList);
 					return 1;
 				}
 
-				if (currCmpLen == 0) {
-					printf("Error. Can't have an empty file name\n");
-					freeCmpList(&cmpList);
-					return 1;
-				}
-				
 				pushCmp(&cmpList, cmpStart, currCmpLen);
 				done = 1;
 				break;
