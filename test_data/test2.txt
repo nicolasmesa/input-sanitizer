@@ -1,0 +1,14 @@
+"test_output" "\" \ \' \\ \| \; \> \< \( \) \* \? \` \# \! \+ \- \{ \} \[ \] \~ \& \^ \$"
+"test_output" '\" \ \' \\ \| \; \> \< \( \) \* \? \` \# \! \+ \- \{ \} \[ \] \~ \& \^ \$'
+"test_output" "\" \ ' \\ | ; > < ( ) * ? ` # ! + - { } [ ] ~ & ^ $"
+"test_output" '\" \ \' \\ | ; > < ( ) * ? ` # ! + - { } [ ] ~ & ^ $'
+"test_output" '\" \' \\ | ; > < ( ) * ? ` # ! + - { } [ ] ~ & ^ $PATH'
+"test_output" '\" \' \\ | ; > < ( ) * ? ` # ! + - { } [ ] ~ & ^ $(cat /etc/passwd)'
+"test_output" '" \' \\ | ; > < ( ) * ? ` # ! + - { } [ ] ~ & ^ $(cat /etc/passwd)'
+"test_output" "!10"
+"test_output" "\\$(cat /etc/passwd)"
+"test_output" "\$(cat /etc/passwd)"
+"test_output" "\134$(cat /etc/passwd)"
+"test_output" "\042echo vulnerable\042"
+";cat /etc/passwd;/../../../aaa" "data\\"
+';cat /etc/passwd;/../../../aaa' 'data\\'

@@ -1,0 +1,27 @@
+"/home/nm2805/hello" valid
+"../../tmp/valid" valid
+"/home/nm2805/hello" valid
+"../nm2805/file" valid
+"/tmp/" valid
+"/tmp/." valid
+"/tmp/.." valid
+"/tmp/any/../" valid
+abcdefghijklmnopqrstuvwxyz1234567890 valid
+abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ valid
+"a!@#$%^&*()_:<>?,.{}[]|\\|" valid
+"\123" valid
+"\123hello" valid
+"\1112a" "valid: file name should be \"I2a\""
+"\12hello" invalid
+"\1" invalid
+"\12" invalid
+"\1a" invalid
+"\57\164\155\160\57\166\141\154\151\144" "invalid"
+"\nc\tc\n\tc\ra\\\"" valid
+"\'" invalid
+'\nc\tc\n\tc\ra\\\'' valid
+"\a" invalid
+"\ " invalid
+"\\\\\" invalid
+"\\\\\"" valid
+"\\\\" valid

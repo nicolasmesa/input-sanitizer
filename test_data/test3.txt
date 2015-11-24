@@ -1,0 +1,17 @@
+'"' valid
+"\"" valid2
+"'" valid
+'\'' valid2
+'/invalid' invalid
+"/invalid" invalid2
+/invalid invalid3
+"/tmp/\116i\143\157\154as" valid
+"/tmp/\116i\143\157\154as \116116" valid
+"/tmp/\118i\143\157\154as \116116" "invalid. first escaped char is not octal digit"
+"/tmp/\400invalid" "more than 255"
+"/tmp/\377valid" 255
+"/tmp/////valid" valid
+"/tmp/\056\056/tmp/valid" valid
+"\057\164\155\160\057\166\141\154\151\144" "valid"
+"\057\164\155\160\057\200\245\042" "valid"
+"../../../invalid" invalid1

@@ -1,0 +1,8 @@
+not valid string
+"valid string" "valid data"
+"/tmp/1/2/3/4/5/../../../3/././././../../../valid file name" "valid data"
+"/tmp/valid file name ending in dot ." "valid data"
+"/tmp/valid file name ending in 2 dots .." "valid data"
+"/tmp/invalid/file/name/ending/in/./../../../../." "valid data"
+"trıÍÑg wÉÏrd chars" "valid data"
+trıÍÑgwÉÏrdchars "valid data"
