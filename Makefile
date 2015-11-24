@@ -9,16 +9,16 @@ input_sanitizer: $(OBJ)
 	cc -o $@ $(OBJ)
 
 test:	build
-	echo Test 1
+	@echo Test 1
 	./input_sanitizer < test_data/test1.txt
 	
-	echo Test 2 
+	@echo Test 2 
 	./input_sanitizer < test_data/test2.txt
 
-	echo Test 3 
+	@echo Test 3 
 	./input_sanitizer < test_data/test3.txt
 	
-	echo Test 4 
+	@echo Test 4 
 	./input_sanitizer < test_data/test4.txt
 
 exec: build
