@@ -259,7 +259,7 @@ int getLineComponents(char *line, struct line_struct *lineStruct) {
 	return 0;
 }
 
-int parseEscapeSquence(char **startOfSequence, char **currEscapedFileName) {
+int parseEscapeSquence(char **startOfSequence, char **currEscapedFileName, char quote) {
 	char *currSeq = *startOfSequence;
 	char *currEscaped = *currEscapedFileName;
 	int done = 0;
@@ -267,7 +267,6 @@ int parseEscapeSquence(char **startOfSequence, char **currEscapedFileName) {
 	digit[1] = '\0';
 
 	if (*currSeq != '\\') {
-		printf("Not escape sequence\n");
 		return 1;
 	}
 
@@ -301,7 +300,20 @@ int parseEscapeSquence(char **startOfSequence, char **currEscapedFileName) {
 			break;
 
 		case '"':
+			if (quote != *currSeq) {
+				return 1;
+			}
+
 			*currEscaped = '"';
+			done = 1;
+			break;
+
+		case '\'':
+			if (quote != *currSeq) {
+				return 1;
+			}
+
+			*currEscaped = '\'';
 			done = 1;
 			break;
 
@@ -311,9 +323,9 @@ int parseEscapeSquence(char **startOfSequence, char **currEscapedFileName) {
 				break;
 			}
 
-			*currEscaped = *currSeq;
-                        done = 1;
-                        break;
+			// Escaping something that should not be escaped
+			printf("char (%c) is not escapeable\n", *currSeq);
+			return 1;
 	}
 
         if (done) {
@@ -456,9 +468,10 @@ int parseField(char *fieldText, struct field_struct *fieldStruct) {
 
 		if (fieldStruct->quoted) {
 			if(c == '\\') {
-                        	error = parseEscapeSquence(&curr, &currEscaped);
+                        	error = parseEscapeSquence(&curr, &currEscaped, fieldStruct->quote);
 
 				if (error) {
+					printf("Error in escape (%s)\n", curr);
 					free(escapedField);
 					return 1;
 				}
