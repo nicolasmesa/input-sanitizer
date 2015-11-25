@@ -764,7 +764,7 @@ int getAbsolutePath(char *fileName, char **absolutePath) {
  * Escapes the dangerous characters of the shell
  */
 int escapeShellChars(char *line, char **escapedLine) {
-  *escapedLine = safeMalloc(strlen(line) * 2);
+  *escapedLine = safeMalloc(strlen(line) * 2 + 1);
   char *currEscaped = *escapedLine;
   char c;
 
@@ -858,8 +858,8 @@ int parseLine(char *line) {
   escapeShellChars(absolutePath, &escapedFileName);
   escapeShellChars(dataStruct.field, &escapedData);
 
-  int escapedFileNameLen = strlen(escapedFileName);
-  int escapedDataLen = strlen(escapedData);
+  unsigned int escapedFileNameLen = strlen(escapedFileName);
+  unsigned int escapedDataLen = strlen(escapedData);
 
   command = safeMalloc(50 + escapedFileNameLen + escapedDataLen);
 
