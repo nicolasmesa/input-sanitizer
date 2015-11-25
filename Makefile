@@ -34,5 +34,5 @@ clean:
 	rm -f /tmp/.*.nm2805
 	rm -f /home/nm2805/*.nm2805
 	rm -f /home/nm2805/.nm2805
-	rm -f /homw/nm2805/.*.nm2805
+	rm -f /home/nm2805/.*.nm2805
 
