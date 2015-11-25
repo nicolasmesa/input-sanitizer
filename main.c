@@ -110,7 +110,7 @@ char *getLine() {
   }
 
   while ((c = getchar()) != EOF && c != '\n') {
-    line[index] = c;
+    line[index] = (char) c;
     index++;
 
     if (index > len - 1) {

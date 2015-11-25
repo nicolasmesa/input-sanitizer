@@ -21,6 +21,9 @@ test:	build
 	@echo Test 4 
 	./input_sanitizer < test_data/test4.txt
 
+	@echo Test 5
+	./input_sanitizer < test_data/test5.txt
+
 exec: build
 	./input_sanitizer $(ARG)
 
