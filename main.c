@@ -103,7 +103,7 @@ char *getLine() {
   int index = 0;
   char *line = malloc(len);
   char *returnLine;
-  char c;
+  int c;
 
   if (line == NULL) {
     printAndExit(NULL);
@@ -155,7 +155,7 @@ char *getInputComponent(char *line) {
   }
 
   while (1) {
-    char c = *line;
+    unsigned char c = *line;
 
     switch (c) {
     case '\0':
