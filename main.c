@@ -233,7 +233,6 @@ int getLineComponents(char *line, struct line_struct *lineStruct) {
     line++;
   }
 
-  // TODO
   if (*line == '\0') {
     return 1;
   }
@@ -892,11 +891,7 @@ int main(int argc, char **argv) {
       break;
     }
 
-    printf("(%s):\t", line);
-
     int ret = parseLine(line);
-
-    printf("%d\n", ret);
 
     free(line);
 
